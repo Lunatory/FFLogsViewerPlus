@@ -1,4 +1,4 @@
-﻿using Dalamud.Interface.Windowing;
+using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using FFLogsViewer.API;
 using FFLogsViewer.GUI.Config;
@@ -27,6 +27,9 @@ public sealed class FFLogsViewer : IDalamudPlugin
         Service.HistoryManager = new HistoryManager();
         Service.TeamManager = new TeamManager();
         Service.FFLogsClient = new FFLogsClient();
+        /// Initialize TomestoneClient
+        Service.TomestoneClient = new TomestoneClient();
+        ///
 
         Service.MainWindow = new MainWindow();
         Service.ConfigWindow = new ConfigWindow();

@@ -1,4 +1,4 @@
-﻿namespace FFLogsViewer.Model;
+namespace FFLogsViewer.Model;
 
 public enum StatType
 {
@@ -12,4 +12,7 @@ public enum StatType
     AllStarsPoints,
     AllStarsRank,
     AllStarsRankPercent,
+    /// Add Tomestone stat
+    Tomestone,
+    ///
 }

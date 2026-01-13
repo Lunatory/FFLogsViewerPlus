@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -188,6 +188,45 @@ public class Table
                 color = Util.GetLogColor(encounter?.AllStarsRankPercent);
                 hoverMessage = hoverMessage.Insert(0, $"Zone ASP R%: {(encounter?.BestAllStarsRankPercentZone == null ? "-" : $"{Util.GetFormattedLog(encounter.BestAllStarsRankPercentZone, Service.Configuration.NbOfDecimalDigits)}")}\n");
                 break;
+            /// Add Tomestone rendering
+            case StatType.Tomestone:
+                if (encounter?.IsTomestoneLoading == true)
+                {
+                    text = "...";
+                }
+                else if (encounter?.TomestoneError != null)
+                {
+                    text = "ERR";
+                    color = new Vector4(1, 0, 0, 1);
+                }
+                else if (encounter?.TomestoneData?.Clear != null)
+                {
+                    text = "✓";
+                    color = new Vector4(0, 1, 0, 1);
+                    if (encounter.TomestoneData.Clear.HasInfo)
+                    {
+                        hoverMessage = hoverMessage.Insert(0,
+                            $"Cleared: {encounter.TomestoneData.Clear.DateTime:yyyy-MM-dd}\n" +
+                            $"{(encounter.TomestoneData.Clear.CompletionWeek != null ? $"({encounter.TomestoneData.Clear.CompletionWeek})\n" : "")}");
+                    }
+                }
+                else if (encounter?.TomestoneData?.Progress != null)
+                {
+                    text = encounter.TomestoneData.Progress.ToString();
+                    color = new Vector4(1, 0.7f, 0.1f, 1);
+                    var lockouts = encounter.TomestoneData.Progress.Lockouts;
+                    if (lockouts.Count > 0)
+                    {
+                        hoverMessage = hoverMessage.Insert(0, $"Best prog: {lockouts[0].Percent}\n");
+                    }
+                }
+                else if (encounter?.TomestoneData != null)
+                {
+                    text = "-";
+                    color = new Vector4(0.5f, 0.5f, 0.5f, 1);
+                }
+                break;
+            ///
             default:
                 text = "?";
                 break;

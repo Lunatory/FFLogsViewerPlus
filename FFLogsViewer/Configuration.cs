@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
 using Dalamud.Configuration;
 using FFLogsViewer.Model;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FFLogsViewer;
 
@@ -10,7 +11,9 @@ namespace FFLogsViewer;
 public class Configuration : IPluginConfiguration
 {
     [JsonIgnore]
-    public const int CurrentConfigVersion = 1;
+    /// Update version to 2 for Tomestone stat
+    public const int CurrentConfigVersion = 2;
+    ///
     public int Version { get; set; } = CurrentConfigVersion;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
@@ -75,6 +78,33 @@ public class Configuration : IPluginConfiguration
             this.Version++;
             this.Save();
         }
+
+        /// Add upgrade for Tomestone stat
+        // Tomestone stat addition
+        if (this.Version == 1)
+        {
+            // Check if Tomestone stat already exists
+            var hasTomestone = this.Stats.Any(stat => stat.Type == StatType.Tomestone);
+            if (!hasTomestone)
+            {
+                // Find the position after Kills (index 3 in default list)
+                var killsIndex = this.Stats.FindIndex(stat => stat.Type == StatType.Kills);
+                var insertIndex = killsIndex >= 0 ? killsIndex + 1 : this.Stats.Count;
+
+                // Insert Tomestone stat
+                this.Stats.Insert(insertIndex, new Stat
+                {
+                    Alias = "Prog",
+                    Name = "Tomestone",
+                    Type = StatType.Tomestone,
+                    IsEnabled = true
+                });
+            }
+
+            this.Version++;
+            this.Save();
+        }
+        ///
     }
 
     public void SetDefaultLayout()
@@ -135,6 +165,9 @@ public class Configuration : IPluginConfiguration
             new Stat { Name = "Best", Type = StatType.Best, IsEnabled = true },
             new Stat { Alias = "Med.", Name = "Median", Type = StatType.Median, IsEnabled = true },
             new Stat { Name = "Kills", Type = StatType.Kills, IsEnabled = true },
+            /// Add Tomestone stat here - after Kills, before Best Job
+            new Stat { Alias = "Prog", Name = "Tomestone", Type = StatType.Tomestone, IsEnabled = true },
+            ///
             new Stat { Name = "Fastest", Type = StatType.Fastest, IsEnabled = false },
             new Stat { Alias = "/metric/", Name = "Best Metric", Type = StatType.BestAmount, IsEnabled = false },
             new Stat { Name = "Job", Type = StatType.Job, IsEnabled = true },

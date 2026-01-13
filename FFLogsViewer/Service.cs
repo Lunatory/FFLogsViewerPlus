@@ -1,4 +1,4 @@
-﻿using Dalamud.Game;
+using Dalamud.Game;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -23,6 +23,9 @@ internal class Service
     internal static OpenWithManager OpenWithManager { get; set; } = null!;
     internal static TeamManager TeamManager { get; set; } = null!;
     internal static FFLogsClient FFLogsClient { get; set; } = null!;
+    /// Add TomestoneClient here
+    internal static TomestoneClient TomestoneClient { get; set; } = null!;
+    ///
 
     [PluginService] internal static IDalamudPluginInterface Interface { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;

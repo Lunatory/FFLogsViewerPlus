@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -137,6 +137,9 @@ public class CharData
         this.IsDataLoading = true;
         this.SetJobId();
         this.ResetData();
+        /// Add Tomestone ID caching
+        uint? lodestoneId = null;
+        ///
         Task.Run(async () =>
         {
             var rawData = await Service.FFLogsClient.FetchLogs(this).ConfigureAwait(false);
@@ -225,6 +228,45 @@ public class CharData
             {
                 this.LoadedJobId = 0;
             }
+
+            /// Fetch Tomestone data for supported encounters
+            try
+            {
+                lodestoneId = await Service.TomestoneClient.FetchLodestoneId(
+                    this.FirstName, this.LastName, this.WorldName);
+
+                if (lodestoneId.HasValue)
+                {
+                    foreach (var encounter in this.Encounters)
+                    {
+                        // Updated to include all new parameters
+                        if (TomestoneEncounterMapping.TryGetTomestoneInfo(
+                            encounter.Id, out var tomestoneId, out var slug, out var category, out var expansion, out var zone))
+                        {
+                            encounter.IsTomestoneLoading = true;
+                            var tomestoneData = await Service.TomestoneClient.FetchEncounterData(
+                                lodestoneId.Value, tomestoneId, slug, category, expansion, zone);
+
+                            encounter.TomestoneData = tomestoneData;
+                            encounter.IsTomestoneLoading = false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Service.PluginLog.Error(ex, "Error fetching Tomestone data");
+                foreach (var encounter in this.Encounters)
+                {
+                    // Updated to use new method name
+                    if (TomestoneEncounterMapping.HasTomestoneSupport(encounter.Id))
+                    {
+                        encounter.IsTomestoneLoading = false;
+                        encounter.TomestoneError = CharacterError.NetworkError;
+                    }
+                }
+            }
+            ///
         }).ContinueWith(t =>
         {
             Service.MainWindow.ResetSize();

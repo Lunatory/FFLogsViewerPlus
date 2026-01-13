@@ -1,4 +1,4 @@
-﻿namespace FFLogsViewer.Model;
+namespace FFLogsViewer.Model;
 
 public class Encounter
 {
@@ -21,4 +21,9 @@ public class Encounter
     public float? BestAllStarsPointsZone;
     public int? BestAllStarsRankZone;
     public float? BestAllStarsRankPercentZone;
+    /// Add Tomestone data fields
+    public TomestoneData? TomestoneData;
+    public bool IsTomestoneLoading;
+    public CharacterError? TomestoneError;
+    ///
 }
