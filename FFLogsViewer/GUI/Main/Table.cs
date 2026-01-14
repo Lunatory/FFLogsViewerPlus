@@ -220,6 +220,13 @@ public class Table
                         hoverMessage = hoverMessage.Insert(0, $"Best prog: {lockouts[0].Percent}\n");
                     }
                 }
+                /// Fix: Add check for when encounter is not supported
+                else if (encounter != null && !TomestoneEncounterMapping.HasTomestoneSupport(encounter.Id))
+                {
+                    text = "-";
+                    color = new Vector4(0.3f, 0.3f, 0.3f, 1);
+                }
+                ///
                 else if (encounter?.TomestoneData != null)
                 {
                     text = "-";

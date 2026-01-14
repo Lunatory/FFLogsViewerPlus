@@ -235,6 +235,17 @@ public class CharData
                 lodestoneId = await Service.TomestoneClient.FetchLodestoneId(
                     this.FirstName, this.LastName, this.WorldName);
 
+                /// Add debug logging
+                if (lodestoneId.HasValue)
+                {
+                    Service.PluginLog.Info($"Lodestone ID found: {lodestoneId.Value}");
+                }
+                else
+                {
+                    Service.PluginLog.Warning($"No Lodestone ID found for {this.FirstName} {this.LastName}@{this.WorldName}");
+                }
+                ///
+
                 if (lodestoneId.HasValue)
                 {
                     foreach (var encounter in this.Encounters)
@@ -243,9 +254,23 @@ public class CharData
                         if (TomestoneEncounterMapping.TryGetTomestoneInfo(
                             encounter.Id, out var tomestoneId, out var slug, out var category, out var expansion, out var zone))
                         {
+                            /// Add debug logging
+                            Service.PluginLog.Info($"Fetching Tomestone for encounter {encounter.Id}: {slug} ({category})");
+                            ///
                             encounter.IsTomestoneLoading = true;
                             var tomestoneData = await Service.TomestoneClient.FetchEncounterData(
                                 lodestoneId.Value, tomestoneId, slug, category, expansion, zone);
+
+                            /// Add debug logging
+                            if (tomestoneData != null)
+                            {
+                                Service.PluginLog.Info($"Tomestone data received for {slug}: Cleared={tomestoneData.Cleared}, HasProgress={tomestoneData.Progress != null}");
+                            }
+                            else
+                            {
+                                Service.PluginLog.Warning($"No Tomestone data returned for {slug}");
+                            }
+                            ///
 
                             encounter.TomestoneData = tomestoneData;
                             encounter.IsTomestoneLoading = false;
