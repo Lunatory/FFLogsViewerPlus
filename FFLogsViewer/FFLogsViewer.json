@@ -1,6 +1,7 @@
 {
   "Author": "Aireil",
-  "Name": "FF Logs Viewer",
+  "Name": "FF Logs Viewer Plus",
+  "InternalName": "FFLogsViewerPlus",
   "Description": "View FF Logs ranking percentiles in-game. Add a context menu to open someone's logs. Layout, style, stats, default metric, and more are all customizable in the settings.",
   "Punchline": "View FF Logs ranking percentiles in-game.",
   "RepoUrl": "https://github.com/Aireil/FFLogsViewer",
