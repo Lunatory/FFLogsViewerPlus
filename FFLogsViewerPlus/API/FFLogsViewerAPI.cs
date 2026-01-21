@@ -40,7 +40,7 @@ public class FFLogsViewerAPI : IFFLogsViewerAPI
     {
         if (!this.IsInitialized)
         {
-            Service.PluginLog.Information("FFLogsViewer API is not initialized.");
+            Service.PluginLog.Information("FFLogsViewerPlus API is not initialized.");
             return false;
         }
 

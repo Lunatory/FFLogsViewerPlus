@@ -232,7 +232,7 @@ public class MenuBar
 
                 if (ImGui.Button("Open the GitHub repo"))
                 {
-                    Util.OpenLink("https://github.com/Aireil/FFLogsViewer");
+                    Util.OpenLink("https://github.com/Aireil/FFLogsViewerPlus");
                 }
 
                 ImGui.SameLine();

@@ -34,6 +34,8 @@ public static class TomestoneEncounterMapping
         { 104, (null, "lindwurm", "raids", "dawntrail", "aac-heavyweight-savage") },              // M12S P1
         { 105, (null, "lindwurm-ii", "raids", "dawntrail", "aac-heavyweight-savage") },           // M12S P2
         
+        /// OLDER TIERS - COMMENTED OUT FOR PERFORMANCE
+        /*
         // AAC Cruiserweight
         { 97, (null, "dancing-green", "raids", "dawntrail", "aac-cruiserweight-savage") },        // M5S
         { 98, (null, "sugar-riot", "raids", "dawntrail", "aac-cruiserweight-savage") },           // M6S
@@ -106,6 +108,8 @@ public static class TomestoneEncounterMapping
         { 38, (null, "catastrophe", "raids", "stormblood", "deltascape-savage") },              // O2S
         { 39, (null, "halicarnassus", "raids", "stormblood", "deltascape-savage") },            // O3S
         { 40, (null, "exdeath", "raids", "stormblood", "deltascape-savage") },                  // O4S
+         */
+        ///
     };
 
     public static bool TryGetTomestoneInfo(int fflogsEncounterId, out int? tomestoneId, out string slug, out string category, out string expansion, out string zone)

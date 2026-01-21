@@ -13,7 +13,7 @@ public class MiscTab
     {
         if (ImGui.Button("Open the GitHub repo"))
         {
-            Util.OpenLink("https://github.com/Aireil/FFLogsViewer");
+            Util.OpenLink("https://github.com/Aireil/FFLogsViewerPlus");
         }
 
         var hasChanged = false;

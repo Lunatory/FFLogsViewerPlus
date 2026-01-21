@@ -1,7 +1,7 @@
 namespace FFLogsViewer.API;
 
 /// <summary>
-/// Interface to communicate with FFLogsViewer.
+/// Interface to communicate with FFLogsViewerPlus.
 /// </summary>
 public interface IFFLogsViewerAPI
 {
@@ -11,7 +11,7 @@ public interface IFFLogsViewerAPI
     public int APIVersion { get; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether FFLogsViewer API is initialized.
+    /// Gets or sets a value indicating whether FFLogsViewerPlus API is initialized.
     /// </summary>
     public bool IsInitialized { get; set; }
 

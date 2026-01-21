@@ -5,24 +5,24 @@ using Dalamud.Plugin.Ipc;
 namespace FFLogsViewer.API;
 
 /// <summary>
-/// IPC for FFLogsViewer plugin.
+/// IPC for FFLogsViewerPlus plugin.
 /// </summary>
 public class FFLogsViewerProvider
 {
     /// <summary>
     /// API Version label.
     /// </summary>
-    public const string LabelProviderApiVersion = "FFLogsViewer.APIVersion";
+    public const string LabelProviderApiVersion = "FFLogsViewerPlus.APIVersion";
 
     /// <summary>
     /// IsInitialized state label.
     /// </summary>
-    public const string LabelProviderIsInitialized = "FFLogsViewer.IsInitialized";
+    public const string LabelProviderIsInitialized = "FFLogsViewerPlus.IsInitialized";
 
     /// <summary>
     /// Fetch and open player profile label.
     /// </summary>
-    public const string LabelProviderFetchCharacter = "FFLogsViewer.FetchCharacter";
+    public const string LabelProviderFetchCharacter = "FFLogsViewerPlus.FetchCharacter";
 
     /// <summary>
     /// API.

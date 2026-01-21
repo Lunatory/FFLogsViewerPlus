@@ -142,6 +142,9 @@ public partial class TomestoneClient
                      $"encounter={GetUltimateSlug(ultimateId)}&" +
                      $"expansion={GetUltimateExpansion(ultimateId)}&" +
                      $"league=all&" +
+                     /// Add sortType parameter
+                     $"sortType=firstKillTime&" +
+                     ///
                      $"zone=ultimates";
             ///
 
@@ -199,8 +202,15 @@ public partial class TomestoneClient
     {
         try
         {
-            // Match the URL format that works in browser: category, encounter, expansion, league, sortType, zone
-            var url = $"https://tomestone.gg/character/{lodestoneId}/dummy/activity?" +
+            /// Add character slug support for savage too
+            if (!this.characterSlugCache.TryGetValue(lodestoneId, out var characterSlug))
+            {
+                Service.PluginLog.Warning($"No character slug cached for lodestone ID {lodestoneId}");
+                characterSlug = "dummy";
+            }
+
+            var url = $"https://tomestone.gg/character/{lodestoneId}/{characterSlug}/activity?" +
+            ///
                      $"category=raids&" +
                      $"encounter={encounterSlug}&" +
                      $"expansion={expansion}&" +

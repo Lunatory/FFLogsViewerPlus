@@ -1,4 +1,4 @@
-using Dalamud.Interface.Windowing;
+﻿using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using FFLogsViewer.API;
 using FFLogsViewer.GUI.Config;
@@ -8,12 +8,12 @@ using FFLogsViewer.Manager;
 namespace FFLogsViewer;
 
 // ReSharper disable once UnusedType.Global
-public sealed class FFLogsViewer : IDalamudPlugin
+public sealed class FFLogsViewerPlus : IDalamudPlugin
 {
     private readonly WindowSystem windowSystem;
     private readonly FFLogsViewerProvider ffLogsViewerProvider;
 
-    public FFLogsViewer(IDalamudPluginInterface pluginInterface)
+    public FFLogsViewerPlus(IDalamudPluginInterface pluginInterface)
     {
         pluginInterface.Create<Service>();
 
@@ -33,7 +33,7 @@ public sealed class FFLogsViewer : IDalamudPlugin
 
         Service.MainWindow = new MainWindow();
         Service.ConfigWindow = new ConfigWindow();
-        this.windowSystem = new WindowSystem("FFLogsViewer");
+        this.windowSystem = new WindowSystem("FFLogsViewerPlus");
         this.windowSystem.AddWindow(Service.ConfigWindow);
         this.windowSystem.AddWindow(Service.MainWindow);
 

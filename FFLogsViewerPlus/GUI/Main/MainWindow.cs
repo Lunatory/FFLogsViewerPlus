@@ -18,7 +18,7 @@ public class MainWindow : Window
     private readonly Table table = new();
 
     public MainWindow()
-        : base("FFLogsViewer##FFLogsViewerMainWindow")
+        : base("FFLogsViewerPlus##FFLogsViewerMainWindow")
     {
         this.RespectCloseHotkey = Service.Configuration.Style.IsCloseHotkeyRespected;
         this.Flags = Service.Configuration.Style.MainWindowFlags;
