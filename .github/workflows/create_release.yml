@@ -18,3 +18,4 @@ jobs:
       personal_plugin_repo: Lunatory/DalamudRepo
       personal_plugin_repo_branch: master
     secrets: inherit
+    
