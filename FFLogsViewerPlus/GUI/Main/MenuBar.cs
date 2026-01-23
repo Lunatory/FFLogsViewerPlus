@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
-
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using FFLogsViewer.Manager;
+using FFLogsViewerPlus.Manager;
 
-namespace FFLogsViewer.GUI.Main;
+namespace FFLogsViewerPlus.GUI.Main;
 
 public class MenuBar
 {

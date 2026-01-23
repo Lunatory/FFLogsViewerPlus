@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
-
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Keys;
 
-namespace FFLogsViewer.GUI.Config;
+namespace FFLogsViewerPlus.GUI.Config;
 
 public class OpenWithTab
 {

@@ -1,6 +1,6 @@
 using System;
 
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public record TomestoneClear(DateTime? DateTime, string? CompletionWeek)
 {

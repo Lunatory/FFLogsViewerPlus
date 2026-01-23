@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace FFLogsViewer.Model.GameData;
+namespace FFLogsViewerPlus.Model.GameData;
 
 public class Difficulty
 {

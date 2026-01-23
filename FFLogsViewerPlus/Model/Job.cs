@@ -1,6 +1,6 @@
 ﻿using System.Numerics;
 
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public class Job
 {

@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
 using System.Threading.Tasks;
-using FFLogsViewer.Model;
-using FFLogsViewer.Model.GameData;
+using FFLogsViewerPlus.Model;
+using FFLogsViewerPlus.Model.GameData;
 
-namespace FFLogsViewer.Manager;
+namespace FFLogsViewerPlus.Manager;
 
 public class GameDataManager
 {

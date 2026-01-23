@@ -1,7 +1,7 @@
 ﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
 
-namespace FFLogsViewer.GUI.Config;
+namespace FFLogsViewerPlus.GUI.Config;
 
 public class ConfigWindow : Window
 {

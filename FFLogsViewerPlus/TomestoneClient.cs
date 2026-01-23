@@ -1,25 +1,36 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
 using Newtonsoft.Json;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public partial class TomestoneClient
 {
     private const int RetryCount = 3;
+    /// Change cache to never expire for clears
+    private const int CacheExpirationMinutes = 20; // Only for prog, clears are permanent
+    ///
+    /// Add persistent cache reference
+    private TomestonePersistentCache PersistentCache => Service.Configuration.TomestoneCache;
+    ///
 
+    private readonly Dictionary<string, (TomestoneData Data, DateTime Timestamp)> encounterCache = new();
+    private readonly Dictionary<string, (uint LodestoneId, string Slug, DateTime Timestamp)> lodestoneCache = new();
     private readonly HttpClient httpClient;
     private readonly HttpClient httpClientNoRedirect;
-    /// Add cache for character slug
     private readonly Dictionary<uint, string> characterSlugCache = new();
-    ///
     private string? inertiaVersion;
 
+    /// REMOVE these throttling fields
+    // private DateTime lastRequestTime = DateTime.MinValue;
+    // private readonly SemaphoreSlim requestSemaphore = new(1, 1);
+    ///
     public TomestoneClient()
     {
         var handler = new HttpClientHandler
@@ -37,6 +48,21 @@ public partial class TomestoneClient
 
     public async Task<uint?> FetchLodestoneId(string firstName, string lastName, string world)
     {
+        var cacheKey = $"{firstName.ToLowerInvariant()}_{lastName.ToLowerInvariant()}_{world.ToLowerInvariant()}";
+
+        /// Check cache first
+        if (this.lodestoneCache.TryGetValue(cacheKey, out var cached))
+        {
+            if ((DateTime.Now - cached.Timestamp).TotalMinutes < CacheExpirationMinutes)
+            {
+                Service.PluginLog.Debug($"Using cached Lodestone ID for {firstName} {lastName}@{world}");
+                // Restore character slug cache
+                this.characterSlugCache[cached.LodestoneId] = cached.Slug;
+                return cached.LodestoneId;
+            }
+        }
+        ///
+
         try
         {
             var fullName = $"{firstName} {lastName}";
@@ -60,13 +86,15 @@ public partial class TomestoneClient
                 var match = LodestoneIdRegex().Match(location);
                 if (match.Success && uint.TryParse(match.Groups[1].Value, out var lodestoneId))
                 {
-                    /// Cache the character slug (e.g., "noelle-abeille")
                     var slugMatch = System.Text.RegularExpressions.Regex.Match(location, @"/character/\d+/([^/?]+)");
                     if (slugMatch.Success)
                     {
-                        this.characterSlugCache[lodestoneId] = slugMatch.Groups[1].Value;
+                        var slug = slugMatch.Groups[1].Value;
+                        this.characterSlugCache[lodestoneId] = slug;
+                        /// Cache with proper data
+                        this.lodestoneCache[cacheKey] = (lodestoneId, slug, DateTime.Now);
+                        ///
                     }
-                    ///
 
                     Service.PluginLog.Info($"Found Lodestone ID: {lodestoneId} for {firstName} {lastName}@{world}");
                     return lodestoneId;
@@ -103,20 +131,85 @@ public partial class TomestoneClient
         string expansion,
         string zone)
     {
+        var cacheKey = $"{lodestoneId}_{encounterSlug}_{category}";
+
+        /// Check persistent cache first for clears
+        if (this.PersistentCache.ClearedEncounters.TryGetValue(cacheKey, out var persistentClear))
+        {
+            Service.PluginLog.Debug($"Using persistent cached clear for {encounterSlug}");
+            var clearData = new TomestoneClear(persistentClear.ClearDateTime, persistentClear.CompletionWeek);
+            return TomestoneData.EncounterCleared(clearData);
+        }
+        ///
+
+        /// Check cache - clears are cached permanently, prog expires
+        if (this.encounterCache.TryGetValue(cacheKey, out var cached))
+        {
+            // If it's a clear, always use cache (never expires)
+            if (cached.Data.Cleared)
+            {
+                Service.PluginLog.Debug($"Using permanently cached clear for {encounterSlug}");
+                return cached.Data;
+            }
+
+            // For prog, check if cache is still valid
+            if ((DateTime.Now - cached.Timestamp).TotalMinutes < CacheExpirationMinutes)
+            {
+                Service.PluginLog.Debug($"Using cached prog data for {encounterSlug}");
+                return cached.Data;
+            }
+
+            // Cache expired for prog data, will fetch fresh
+            Service.PluginLog.Debug($"Cache expired for {encounterSlug} prog, fetching fresh data");
+        }
+
+        /// Check if we have the character slug needed for fetching
+        if (!this.characterSlugCache.ContainsKey(lodestoneId))
+        {
+            Service.PluginLog.Warning($"No character slug cached for lodestone ID {lodestoneId}, cannot fetch fresh data");
+            // Return cached data even if expired, or null if no cache
+            return cached.Data;
+        }
+        ///
+
         try
         {
+            TomestoneData? result = null;
+
             if (category == "ultimates" && ultimateId.HasValue)
             {
-                return await FetchUltimateData(lodestoneId, ultimateId.Value);
+                result = await FetchUltimateData(lodestoneId, ultimateId.Value);
             }
 
             if (category == "raids")
             {
-                return await FetchSavageData(lodestoneId, encounterSlug, expansion, zone);
+                result = await FetchSavageData(lodestoneId, encounterSlug, expansion, zone);
             }
 
-            return null;
+            /// Cache the result
+            if (result != null)
+            {
+                this.encounterCache[cacheKey] = (result, DateTime.Now);
+
+                if (result.Cleared)
+                {
+                    Service.PluginLog.Info($"Permanently cached clear for {encounterSlug}");
+                    /// Save clear to persistent cache
+                    this.PersistentCache.ClearedEncounters[cacheKey] = new TomestonePersistentCache.CachedClearData
+                    {
+                        ClearDateTime = result.Clear?.DateTime,
+                        CompletionWeek = result.Clear?.CompletionWeek,
+                        CachedAt = DateTime.Now
+                    };
+                    Service.Configuration.Save();
+                    ///
+                }
+            }
+            ///
+
+            return result;
         }
+
         catch (Exception ex)
         {
             Service.PluginLog.Error(ex, $"Error fetching Tomestone data for {encounterSlug}");
@@ -236,6 +329,10 @@ public partial class TomestoneClient
 
     private async Task<dynamic?> GetDynamicData(string uri, string partialData)
     {
+        /// REMOVE this line
+        // await ThrottleRequest();
+        ///
+
         for (var i = 0; i < RetryCount; i++)
         {
             if (this.inertiaVersion == null)
@@ -268,6 +365,15 @@ public partial class TomestoneClient
                     this.inertiaVersion = null;
                     continue;
                 }
+                /// Handle 403 with exponential backoff
+                else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, i)); // 1s, 2s, 4s
+                    Service.PluginLog.Warning($"Got 403 Forbidden, waiting {delay.TotalSeconds}s before retry {i + 1}/{RetryCount}");
+                    await Task.Delay(delay);
+                    continue;
+                }
+                ///
                 else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
                     Service.PluginLog.Warning($"Not found: {uri}");
@@ -517,4 +623,61 @@ public partial class TomestoneClient
 
     [GeneratedRegex(@"https://tomestone\.gg/character/(\d+)/")]
     private static partial Regex LodestoneIdRegex();
-}
+
+
+    /// Add cleanup cache method here
+    /// Add method to clear persistent cache for specific character/encounter
+    public void ClearPersistentCache(uint? lodestoneId = null, string? encounterSlug = null)
+    {
+        if (lodestoneId == null && encounterSlug == null)
+        {
+            // Clear all
+            this.PersistentCache.ClearedEncounters.Clear();
+            Service.PluginLog.Info("Cleared all persistent Tomestone cache");
+        }
+        else
+        {
+            // Clear matching entries
+            var keysToRemove = this.PersistentCache.ClearedEncounters.Keys
+                .Where(key =>
+                    (lodestoneId == null || key.StartsWith($"{lodestoneId}_")) &&
+                    (encounterSlug == null || key.Contains($"_{encounterSlug}_")))
+                .ToList();
+
+            foreach (var key in keysToRemove)
+            {
+                this.PersistentCache.ClearedEncounters.Remove(key);
+            }
+
+            Service.PluginLog.Info($"Cleared {keysToRemove.Count} persistent cache entries");
+        }
+
+        Service.Configuration.Save();
+    }
+    ///
+
+    private void CleanupCache()
+    {
+        var expiredKeys = this.encounterCache
+            .Where(kvp =>
+                /// Only remove non-cleared encounters that have expired
+                !kvp.Value.Data.Cleared &&
+                ///
+                (DateTime.Now - kvp.Value.Timestamp).TotalMinutes >= CacheExpirationMinutes)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var key in expiredKeys)
+        {
+            this.encounterCache.Remove(key);
+        }
+
+        /// Log cleanup
+        if (expiredKeys.Count > 0)
+        {
+            Service.PluginLog.Debug($"Cleaned up {expiredKeys.Count} expired cache entries");
+        }
+    }
+        ///
+    }
+

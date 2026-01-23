@@ -1,6 +1,6 @@
 using System;
 
-namespace FFLogsViewer.API;
+namespace FFLogsViewerPlus.API;
 
 /// <inheritdoc cref="IFFLogsViewerAPI" />
 public class FFLogsViewerAPI : IFFLogsViewerAPI

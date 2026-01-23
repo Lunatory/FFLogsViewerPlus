@@ -1,6 +1,6 @@
 ﻿using Dalamud.Bindings.ImGui;
 
-namespace FFLogsViewer.GUI.Config;
+namespace FFLogsViewerPlus.GUI.Config;
 
 public class StyleTab
 {

@@ -1,11 +1,11 @@
-using Dalamud.Configuration;
-using FFLogsViewer.Model;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Configuration;
+using FFLogsViewerPlus.Model;
+using Newtonsoft.Json;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 [Serializable]
 public class Configuration : IPluginConfiguration
@@ -22,6 +22,9 @@ public class Configuration : IPluginConfiguration
     public bool ContextMenuPartyView { get; set; } = true;
     public bool ContextMenuAlwaysPartyView { get; set; }
     public bool OpenInBrowser { get; set; }
+    /// Add auto fetch tomestone setting
+    public bool AutoFetchTomestoneProgress { get; set; } = false;
+    ///
     public bool ShowTomestoneOption { get; set; } = true;
     public string ContextMenuButtonName { get; set; } = "Search FF Logs";
     public bool IsDefaultViewParty { get; set; }
@@ -40,6 +43,9 @@ public class Configuration : IPluginConfiguration
     public Style Style { get; set; } = new();
     public OpenWith OpenWith { get; set; } = new();
     public bool IsUpdateDismissed2213 { get; set; }
+    /// Add persistent Tomestone cache
+    public TomestonePersistentCache TomestoneCache { get; set; } = new();
+    ///
 
     public void Save()
     {

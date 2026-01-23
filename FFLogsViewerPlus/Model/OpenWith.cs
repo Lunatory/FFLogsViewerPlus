@@ -1,6 +1,6 @@
 ﻿using Dalamud.Game.ClientState.Keys;
 
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public class OpenWith
 {

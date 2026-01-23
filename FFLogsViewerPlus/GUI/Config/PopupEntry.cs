@@ -1,15 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
+using Encounter = FFLogsViewerPlus.Model.GameData.Encounter;
 
-using Encounter = FFLogsViewer.Model.GameData.Encounter;
-
-namespace FFLogsViewer.GUI.Config;
+namespace FFLogsViewerPlus.GUI.Config;
 
 public class PopupEntry
 {

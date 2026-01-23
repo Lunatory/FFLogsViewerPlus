@@ -1,7 +1,7 @@
 ﻿using System;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public class LayoutEntry : ICloneable
 {

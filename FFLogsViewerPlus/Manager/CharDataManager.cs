@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using Lumina.Excel.Sheets;
 
-namespace FFLogsViewer.Manager;
+namespace FFLogsViewerPlus.Manager;
 
 public class CharDataManager
 {
@@ -166,12 +166,21 @@ public class CharDataManager
     {
         if (Service.MainWindow.IsPartyView)
         {
+            /// Dispose all party members
+            foreach (var member in this.PartyMembers)
+            {
+                member.Dispose();
+            }
+            ///
             this.PartyMembers.Clear();
             this.currentAllianceIndex = null;
             this.IsCurrPartyAnAlliance = false;
         }
         else
         {
+            /// Dispose displayed character
+            this.DisplayedChar.Dispose();
+            ///
             this.DisplayedChar = new CharData();
         }
     }
@@ -181,4 +190,27 @@ public class CharDataManager
         this.currentAllianceIndex = Service.TeamManager.GetNextAllianceIndex(this.currentAllianceIndex);
         this.UpdatePartyMembers(false);
     }
+
+    /// Add method to fetch Tomestone progress for whole party
+    public async System.Threading.Tasks.Task FetchPartyTomestoneProgress()
+    {
+        if (!Service.MainWindow.IsPartyView)
+        {
+            Service.PluginLog.Warning("Not in party view");
+            return;
+        }
+
+        var tasks = new List<System.Threading.Tasks.Task>();
+        foreach (var partyMember in this.PartyMembers)
+        {
+            if (partyMember.IsDataReady)
+            {
+                tasks.Add(partyMember.FetchTomestoneProgress());
+            }
+        }
+
+        await System.Threading.Tasks.Task.WhenAll(tasks);
+        Service.PluginLog.Info($"Fetched Tomestone progress for {tasks.Count} party members");
+    }
+    ///
 }

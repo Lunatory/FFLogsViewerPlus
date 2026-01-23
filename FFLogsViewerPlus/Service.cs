@@ -1,15 +1,13 @@
-using Dalamud.Game;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using FFLogsViewer.GUI.Config;
-using FFLogsViewer.GUI.Main;
-using FFLogsViewer.Manager;
+using FFLogsViewerPlus.GUI.Config;
+using FFLogsViewerPlus.GUI.Main;
+using FFLogsViewerPlus.Manager;
 
 #pragma warning disable SA1134 // AttributesMustNotShareLine
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 internal class Service
 {

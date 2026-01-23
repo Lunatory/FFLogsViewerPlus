@@ -1,4 +1,4 @@
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public enum StatType
 {

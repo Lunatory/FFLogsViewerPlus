@@ -1,11 +1,10 @@
-﻿using System;
-
+using System;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Utility.Raii;
 
-namespace FFLogsViewer.GUI.Config;
+namespace FFLogsViewerPlus.GUI.Config;
 
 public class MiscTab
 {
@@ -13,7 +12,7 @@ public class MiscTab
     {
         if (ImGui.Button("Open the GitHub repo"))
         {
-            Util.OpenLink("https://github.com/Aireil/FFLogsViewerPlus");
+            Util.OpenLink("https://github.com/Aireil/FFLogsViewer");
         }
 
         var hasChanged = false;
@@ -108,6 +107,18 @@ public class MiscTab
             Service.Configuration.ShowTomestoneOption = showTomestoneOption;
             hasChanged = true;
         }
+
+        /// Add auto-fetch Tomestone setting
+        var autoFetchTomestoneProgress = Service.Configuration.AutoFetchTomestoneProgress;
+        if (ImGui.Checkbox("Auto-fetch Tomestone progress", ref autoFetchTomestoneProgress))
+        {
+            Service.Configuration.AutoFetchTomestoneProgress = autoFetchTomestoneProgress;
+            hasChanged = true;
+        }
+
+        Util.DrawHelp("When enabled, Tomestone progress data will be automatically fetched when opening the plugin.\n" +
+                      "When disabled, you can manually fetch it by clicking on a character's name and selecting 'Fetch Tomestone Progress'.");
+        ///
 
         var isCachingEnabled = Service.Configuration.IsCachingEnabled;
         if (ImGui.Checkbox("Enable caching", ref isCachingEnabled))

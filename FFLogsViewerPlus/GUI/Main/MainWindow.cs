@@ -1,10 +1,10 @@
 ﻿using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.Windowing;
-using FFLogsViewer.Manager;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Manager;
+using FFLogsViewerPlus.Model;
 
-namespace FFLogsViewer.GUI.Main;
+namespace FFLogsViewerPlus.GUI.Main;
 
 public class MainWindow : Window
 {

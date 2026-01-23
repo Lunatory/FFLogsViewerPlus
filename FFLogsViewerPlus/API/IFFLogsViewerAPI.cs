@@ -1,4 +1,4 @@
-namespace FFLogsViewer.API;
+namespace FFLogsViewerPlus.API;
 
 /// <summary>
 /// Interface to communicate with FFLogsViewerPlus.

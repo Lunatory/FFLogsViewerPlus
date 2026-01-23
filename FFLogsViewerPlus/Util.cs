@@ -1,20 +1,18 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Colors;
 using Dalamud.Interface.Utility.Raii;
-using FFLogsViewer.Manager;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Manager;
+using FFLogsViewerPlus.Model;
 using Lumina.Excel.Sheets;
-
 using Action = System.Action;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public class Util
 {
@@ -234,6 +232,26 @@ public class Util
         {
             OpenTomestoneLink(charData);
         }
+
+        /// Add Tomestone fetch options
+        if (!Service.Configuration.AutoFetchTomestoneProgress)
+        {
+            if (ImGui.Selectable("Fetch Tomestone Progress"))
+            {
+                _ = charData.FetchTomestoneProgress();
+                ImGui.CloseCurrentPopup();
+            }
+
+            if (Service.MainWindow.IsPartyView)
+            {
+                if (ImGui.Selectable("Fetch Whole Party Progress"))
+                {
+                    _ = Service.CharDataManager.FetchPartyTomestoneProgress();
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+        }
+        ///
 
         DrawHelp("Tomestone is a website developed by the creator of FF Logs.\n" +
                  "In the context of this plugin, it can be used to see the current prog point/activity of a player based on logs.\n" +

@@ -2,7 +2,7 @@ using System;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
-namespace FFLogsViewer.API;
+namespace FFLogsViewerPlus.API;
 
 /// <summary>
 /// IPC for FFLogsViewerPlus plugin.

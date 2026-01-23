@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public record TomestoneProgPoint(IReadOnlyList<TomestoneProgPoint.Lockout> Lockouts)
 {

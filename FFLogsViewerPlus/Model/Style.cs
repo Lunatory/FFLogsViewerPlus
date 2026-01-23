@@ -1,6 +1,6 @@
 ﻿using Dalamud.Bindings.ImGui;
 
-namespace FFLogsViewer.Model;
+namespace FFLogsViewerPlus.Model;
 
 public class Style
 {

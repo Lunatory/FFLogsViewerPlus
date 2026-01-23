@@ -1,11 +1,11 @@
 ﻿using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using FFLogsViewer.API;
-using FFLogsViewer.GUI.Config;
-using FFLogsViewer.GUI.Main;
-using FFLogsViewer.Manager;
+using FFLogsViewerPlus.API;
+using FFLogsViewerPlus.GUI.Config;
+using FFLogsViewerPlus.GUI.Main;
+using FFLogsViewerPlus.Manager;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 // ReSharper disable once UnusedType.Global
 public sealed class FFLogsViewerPlus : IDalamudPlugin

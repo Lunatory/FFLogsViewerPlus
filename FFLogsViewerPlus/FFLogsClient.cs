@@ -7,12 +7,12 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using FFLogsViewer.Manager;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Manager;
+using FFLogsViewerPlus.Model;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public class FFLogsClient
 {

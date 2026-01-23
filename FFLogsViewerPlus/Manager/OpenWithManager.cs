@@ -1,13 +1,12 @@
 ﻿using System;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Hooking;
-using Dalamud.Memory;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
-namespace FFLogsViewer.Manager;
+namespace FFLogsViewerPlus.Manager;
 
 public unsafe class OpenWithManager
 {

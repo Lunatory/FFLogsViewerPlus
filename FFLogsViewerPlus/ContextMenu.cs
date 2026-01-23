@@ -1,9 +1,9 @@
 ﻿using Dalamud.Game.Gui.ContextMenu;
 using Dalamud.Memory;
-using FFLogsViewer.Manager;
+using FFLogsViewerPlus.Manager;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public class ContextMenu
 {

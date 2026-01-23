@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public static class TomestoneEncounterMapping
 {

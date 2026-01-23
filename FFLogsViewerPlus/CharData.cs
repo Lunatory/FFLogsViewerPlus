@@ -2,16 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
-
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using FFLogsViewer.Manager;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Manager;
+using FFLogsViewerPlus.Model;
 using Newtonsoft.Json.Linq;
 
-namespace FFLogsViewer;
+namespace FFLogsViewerPlus;
 
 public class CharData
 {
@@ -28,6 +28,7 @@ public class CharData
     public uint LoadedJobId;
     public volatile bool IsDataLoading;
     public volatile bool IsDataReady;
+    private CancellationTokenSource? tomestoneCancellationTokenSource;
 
     public string Abbreviation
     {
@@ -137,6 +138,12 @@ public class CharData
         this.IsDataLoading = true;
         this.SetJobId();
         this.ResetData();
+        /// Cancel any previous Tomestone requests
+        this.tomestoneCancellationTokenSource?.Cancel();
+        this.tomestoneCancellationTokenSource?.Dispose();
+        this.tomestoneCancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = this.tomestoneCancellationTokenSource.Token;
+        ///
         /// Add Tomestone ID caching
         uint? lodestoneId = null;
         ///
@@ -230,69 +237,120 @@ public class CharData
             }
 
             /// Fetch Tomestone data for supported encounters
-            try
+            /// Only auto-fetch if setting is enabled
+            if (Service.Configuration.AutoFetchTomestoneProgress)
             {
-                lodestoneId = await Service.TomestoneClient.FetchLodestoneId(
-                    this.FirstName, this.LastName, this.WorldName);
-
-                /// Add debug logging
-                if (lodestoneId.HasValue)
-                {
-                    Service.PluginLog.Info($"Lodestone ID found: {lodestoneId.Value}");
-                }
-                else
-                {
-                    Service.PluginLog.Warning($"No Lodestone ID found for {this.FirstName} {this.LastName}@{this.WorldName}");
-                }
                 ///
-
-                if (lodestoneId.HasValue)
+                try
                 {
-                    foreach (var encounter in this.Encounters)
+                    /// Check cancellation before starting
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        // Updated to include all new parameters
-                        if (TomestoneEncounterMapping.TryGetTomestoneInfo(
-                            encounter.Id, out var tomestoneId, out var slug, out var category, out var expansion, out var zone))
+                        Service.PluginLog.Info("Tomestone fetch cancelled before starting");
+                        return;
+                    }
+                    ///
+
+                    lodestoneId = await Service.TomestoneClient.FetchLodestoneId(
+                        this.FirstName, this.LastName, this.WorldName);
+
+                    /// Check cancellation after Lodestone ID fetch
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        Service.PluginLog.Info("Tomestone fetch cancelled after Lodestone ID fetch");
+                        return;
+                    }
+                    ///
+
+                    if (lodestoneId.HasValue)
+                    {
+                        Service.PluginLog.Info($"Lodestone ID found: {lodestoneId.Value}");
+                    }
+                    else
+                    {
+                        Service.PluginLog.Warning($"No Lodestone ID found for {this.FirstName} {this.LastName}@{this.WorldName}");
+                    }
+
+                    if (lodestoneId.HasValue)
+                    {
+                        /// Only fetch for encounters in the current layout
+                        var layoutEncounterIds = Service.Configuration.Layout
+                            .Where(e => e.Type == LayoutEntryType.Encounter)
+                            .Select(e => e.EncounterId)
+                            .ToHashSet();
+                        ///
+
+                        foreach (var encounter in this.Encounters)
                         {
-                            /// Add debug logging
-                            Service.PluginLog.Info($"Fetching Tomestone for encounter {encounter.Id}: {slug} ({category})");
-                            ///
-                            encounter.IsTomestoneLoading = true;
-                            var tomestoneData = await Service.TomestoneClient.FetchEncounterData(
-                                lodestoneId.Value, tomestoneId, slug, category, expansion, zone);
-
-                            /// Add debug logging
-                            if (tomestoneData != null)
+                            /// Check cancellation at start of each iteration
+                            if (cancellationToken.IsCancellationRequested)
                             {
-                                Service.PluginLog.Info($"Tomestone data received for {slug}: Cleared={tomestoneData.Cleared}, HasProgress={tomestoneData.Progress != null}");
-                            }
-                            else
-                            {
-                                Service.PluginLog.Warning($"No Tomestone data returned for {slug}");
+                                Service.PluginLog.Info("Tomestone fetch cancelled during encounter loop");
+                                return;
                             }
                             ///
 
-                            encounter.TomestoneData = tomestoneData;
-                            encounter.IsTomestoneLoading = false;
+                            /// Only fetch if encounter is in layout
+                            if (!layoutEncounterIds.Contains(encounter.Id))
+                            {
+                                continue;
+                            }
+                            ///
+
+                            if (TomestoneEncounterMapping.TryGetTomestoneInfo(
+                                encounter.Id, out var tomestoneId, out var slug, out var category, out var expansion, out var zone))
+                            {
+                                Service.PluginLog.Info($"Fetching Tomestone for encounter {encounter.Id}: {slug} ({category})");
+                                encounter.IsTomestoneLoading = true;
+                                var tomestoneData = await Service.TomestoneClient.FetchEncounterData(
+                                    lodestoneId.Value, tomestoneId, slug, category, expansion, zone);
+
+                                /// Check cancellation immediately after fetch
+                                if (cancellationToken.IsCancellationRequested)
+                                {
+                                    Service.PluginLog.Info("Tomestone fetch cancelled after encounter fetch");
+                                    encounter.IsTomestoneLoading = false;
+                                    return;
+                                }
+                                ///
+
+                                if (tomestoneData != null)
+                                {
+                                    Service.PluginLog.Info($"Tomestone data received for {slug}: Cleared={tomestoneData.Cleared}, HasProgress={tomestoneData.Progress != null}");
+                                }
+                                else
+                                {
+                                    Service.PluginLog.Warning($"No Tomestone data returned for {slug}");
+                                }
+
+                                encounter.TomestoneData = tomestoneData;
+                                encounter.IsTomestoneLoading = false;
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                Service.PluginLog.Error(ex, "Error fetching Tomestone data");
-                foreach (var encounter in this.Encounters)
+                catch (Exception ex)
                 {
-                    // Updated to use new method name
-                    if (TomestoneEncounterMapping.HasTomestoneSupport(encounter.Id))
+                    /// Don't log if it was just a cancellation
+                    if (!cancellationToken.IsCancellationRequested)
                     {
-                        encounter.IsTomestoneLoading = false;
-                        encounter.TomestoneError = CharacterError.NetworkError;
+                        Service.PluginLog.Error(ex, "Error fetching Tomestone data");
+                    }
+                    ///
+                    foreach (var encounter in this.Encounters)
+                    {
+                        // Updated to use new method name
+                        if (TomestoneEncounterMapping.HasTomestoneSupport(encounter.Id))
+                        {
+                            encounter.IsTomestoneLoading = false;
+                            encounter.TomestoneError = CharacterError.NetworkError;
+                        }
                     }
                 }
+                ///
             }
-            ///
-        }).ContinueWith(t =>
+        }
+        ).ContinueWith(t =>
         {
             Service.MainWindow.ResetSize();
             this.IsDataLoading = false;
@@ -538,4 +596,87 @@ public class CharData
             this.Encounters.Add(encounter);
         }
     }
+    public void Dispose()
+    {
+        this.tomestoneCancellationTokenSource?.Cancel();
+        this.tomestoneCancellationTokenSource?.Dispose();
+    }
+
+    /// Add manual Tomestone fetch method
+    public async Task FetchTomestoneProgress()
+    {
+        if (!this.IsDataReady)
+        {
+            Service.PluginLog.Warning("Cannot fetch Tomestone progress - FFLogs data not ready");
+            return;
+        }
+
+        // Cancel any previous Tomestone requests
+        this.tomestoneCancellationTokenSource?.Cancel();
+        this.tomestoneCancellationTokenSource?.Dispose();
+        this.tomestoneCancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = this.tomestoneCancellationTokenSource.Token;
+
+        try
+        {
+            if (cancellationToken.IsCancellationRequested) return;
+
+            var lodestoneId = await Service.TomestoneClient.FetchLodestoneId(
+                this.FirstName, this.LastName, this.WorldName);
+
+            if (cancellationToken.IsCancellationRequested) return;
+
+            if (!lodestoneId.HasValue)
+            {
+                Service.PluginLog.Warning($"No Lodestone ID found for {this.FirstName} {this.LastName}@{this.WorldName}");
+                return;
+            }
+
+            var layoutEncounterIds = Service.Configuration.Layout
+                .Where(e => e.Type == LayoutEntryType.Encounter)
+                .Select(e => e.EncounterId)
+                .ToHashSet();
+
+            foreach (var encounter in this.Encounters)
+            {
+                if (cancellationToken.IsCancellationRequested) return;
+
+                if (!layoutEncounterIds.Contains(encounter.Id)) continue;
+
+                if (TomestoneEncounterMapping.TryGetTomestoneInfo(
+                    encounter.Id, out var tomestoneId, out var slug, out var category, out var expansion, out var zone))
+                {
+                    Service.PluginLog.Info($"Manually fetching Tomestone for encounter {encounter.Id}: {slug} ({category})");
+                    encounter.IsTomestoneLoading = true;
+                    var tomestoneData = await Service.TomestoneClient.FetchEncounterData(
+                        lodestoneId.Value, tomestoneId, slug, category, expansion, zone);
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        encounter.IsTomestoneLoading = false;
+                        return;
+                    }
+
+                    encounter.TomestoneData = tomestoneData;
+                    encounter.IsTomestoneLoading = false;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                Service.PluginLog.Error(ex, "Error manually fetching Tomestone data");
+            }
+            foreach (var encounter in this.Encounters)
+            {
+                if (TomestoneEncounterMapping.HasTomestoneSupport(encounter.Id))
+                {
+                    encounter.IsTomestoneLoading = false;
+                    encounter.TomestoneError = CharacterError.NetworkError;
+                }
+            }
+        }
+    }
+    ///
 }

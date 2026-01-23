@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Memory;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 
-namespace FFLogsViewer.Manager;
+namespace FFLogsViewerPlus.Manager;
 
 public class TeamManager
 {

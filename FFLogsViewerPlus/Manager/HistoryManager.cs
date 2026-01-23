@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using FFLogsViewer.Model;
+using FFLogsViewerPlus.Model;
 using Newtonsoft.Json;
 
-namespace FFLogsViewer.Manager;
+namespace FFLogsViewerPlus.Manager;
 
 public class HistoryManager
 {
