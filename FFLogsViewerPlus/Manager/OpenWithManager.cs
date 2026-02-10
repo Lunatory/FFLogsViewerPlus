@@ -1,4 +1,6 @@
 ﻿using System;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
@@ -19,7 +21,6 @@ public unsafe class OpenWithManager
     private nint processInspectPacketAddress;
     private nint socialDetailAtkCreationAddress;
     private nint processPartyFinderDetailPacketAddress;
-    private nint atkUnitBaseFinalizeAddress;
 
     private delegate void* CharaCardAtkCreationDelegate(AgentCharaCard* agentCharaCard);
     private Hook<CharaCardAtkCreationDelegate>? charaCardAtkCreationHook;
@@ -32,9 +33,6 @@ public unsafe class OpenWithManager
 
     private delegate void* ProcessPartyFinderDetailPacketDelegate(nint someAgent, AgentLookingForGroup.Detailed* data);
     private Hook<ProcessPartyFinderDetailPacketDelegate>? processPartyFinderDetailPacketHook;
-
-    private delegate void AtkUnitBaseFinalizeDelegate(AtkUnitBase* addon);
-    private Hook<AtkUnitBaseFinalizeDelegate>? atkUnitBaseFinalizeHook;
 
     public OpenWithManager()
     {
@@ -53,7 +51,7 @@ public unsafe class OpenWithManager
         this.processInspectPacketHook?.Dispose();
         this.socialDetailAtkCreationHook?.Dispose();
         this.processPartyFinderDetailPacketHook?.Dispose();
-        this.atkUnitBaseFinalizeHook?.Dispose();
+        Service.AddonLifecycle.UnregisterListener(AddonEvent.PreFinalize, this.OnPreFinalize);
     }
 
     private static bool IsEnabled()
@@ -125,7 +123,6 @@ public unsafe class OpenWithManager
             this.processInspectPacketAddress = Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 0F B6 07 84 C0 74 11");
             this.socialDetailAtkCreationAddress = Service.SigScanner.ScanText("E8 ?? ?? ?? ?? E9 ?? ?? ?? ?? 48 8B 8B ?? 0F 00 00 BF 00 00 00 E0");
             this.processPartyFinderDetailPacketAddress = Service.SigScanner.ScanText("E9 ?? ?? ?? ?? CC CC CC CC CC CC 48 89 5C 24 ?? 48 89 74 24 ?? 48 89 7C 24 ?? 55 48 8D AC 24");
-            this.atkUnitBaseFinalizeAddress = Service.SigScanner.ScanText("E8 ?? ?? ?? ?? 45 33 C9 8D 57 01 41 B8");
 
             try
             {
@@ -163,9 +160,8 @@ public unsafe class OpenWithManager
 
             this.processPartyFinderDetailPacketHook = Service.GameInteropProvider.HookFromAddress<ProcessPartyFinderDetailPacketDelegate>(this.processPartyFinderDetailPacketAddress, this.ProcessPartyFinderDetailPacketDetour);
             this.processPartyFinderDetailPacketHook.Enable();
-
-            this.atkUnitBaseFinalizeHook = Service.GameInteropProvider.HookFromAddress<AtkUnitBaseFinalizeDelegate>(this.atkUnitBaseFinalizeAddress, this.AktUnitBaseFinalizeDetour);
-            this.atkUnitBaseFinalizeHook.Enable();
+            
+            Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, this.OnPreFinalize);
         }
         catch (Exception ex)
         {
@@ -269,16 +265,16 @@ public unsafe class OpenWithManager
         return this.processPartyFinderDetailPacketHook!.Original(someAgent, data);
     }
 
-    private void AktUnitBaseFinalizeDetour(AtkUnitBase* addon)
+    private void OnPreFinalize(AddonEvent type, AddonArgs args)
     {
         try
         {
             if (IsEnabled() && Service.Configuration.OpenWith.ShouldCloseMainWindow)
             {
-                if ((Service.Configuration.OpenWith.IsAdventurerPlateEnabled && addon->NameString == "CharaCard")
-                    || (Service.Configuration.OpenWith.IsExamineEnabled && addon->NameString == "CharacterInspect")
-                    || (Service.Configuration.OpenWith.IsSearchInfoEnabled && addon->NameString == "SocialDetailB")
-                    || (Service.Configuration.OpenWith.IsPartyFinderEnabled && addon->NameString == "LookingForGroupDetail"))
+                if ((Service.Configuration.OpenWith.IsAdventurerPlateEnabled && args.AddonName == "CharaCard")
+                    || (Service.Configuration.OpenWith.IsExamineEnabled && args.AddonName == "CharacterInspect")
+                    || (Service.Configuration.OpenWith.IsSearchInfoEnabled && args.AddonName == "SocialDetailB")
+                    || (Service.Configuration.OpenWith.IsPartyFinderEnabled && args.AddonName == "LookingForGroupDetail"))
                 {
                     // do not close the window if it was just opened, avoid issue of race condition with the addon closing
                     if (DateTime.Now - this.wasOpenedLast > TimeSpan.FromMilliseconds(100))
@@ -290,9 +286,7 @@ public unsafe class OpenWithManager
         }
         catch (Exception ex)
         {
-            Service.PluginLog.Error(ex, "Exception in AktUnitBaseFinalizeDetour.");
+            Service.PluginLog.Error(ex, "Exception in OnPreFinalize.");
         }
-
-        this.atkUnitBaseFinalizeHook!.Original(addon);
     }
 }
