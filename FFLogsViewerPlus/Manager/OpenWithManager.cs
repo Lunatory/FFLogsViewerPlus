@@ -160,7 +160,7 @@ public unsafe class OpenWithManager
 
             this.processPartyFinderDetailPacketHook = Service.GameInteropProvider.HookFromAddress<ProcessPartyFinderDetailPacketDelegate>(this.processPartyFinderDetailPacketAddress, this.ProcessPartyFinderDetailPacketDetour);
             this.processPartyFinderDetailPacketHook.Enable();
-            
+
             Service.AddonLifecycle.RegisterListener(AddonEvent.PreFinalize, this.OnPreFinalize);
         }
         catch (Exception ex)

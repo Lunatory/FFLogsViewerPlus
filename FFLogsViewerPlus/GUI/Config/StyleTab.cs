@@ -159,6 +159,8 @@ public class StyleTab
                 style.MainTableFlags = (ImGuiTableFlags)tmpTableFlags;
                 hasStyleChanged = true;
             }
+
+            ImGui.EndPopup();
         }
 
         ImGui.Unindent();
