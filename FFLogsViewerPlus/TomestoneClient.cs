@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -33,17 +34,34 @@ public partial class TomestoneClient
     ///
     public TomestoneClient()
     {
+        var cookieContainer = new CookieContainer();
+        var humanVerifiedCookie = new Cookie
+        {
+            Name = "tomestone_human_verified",
+            Value = "1",
+            Domain = "tomestone.gg",
+            Path = "/",
+            Expires = DateTime.UtcNow.AddDays(7300),
+            Secure = true,
+        };
+        cookieContainer.Add(new Uri("https://tomestone.gg"), humanVerifiedCookie);
+
         var handler = new HttpClientHandler
         {
-            UseCookies = false,
+            CookieContainer = cookieContainer,
+            UseCookies = true,
             AllowAutoRedirect = false
         };
         this.httpClient = new HttpClient(handler);
 
-        this.httpClientNoRedirect = new HttpClient(new HttpClientHandler
+        // Also add cookies to the no-redirect client
+        var handlerNoRedirect = new HttpClientHandler
         {
+            CookieContainer = cookieContainer,
+            UseCookies = true,
             AllowAutoRedirect = false
-        });
+        };
+        this.httpClientNoRedirect = new HttpClient(handlerNoRedirect);
     }
 
     public async Task<uint?> FetchLodestoneId(string firstName, string lastName, string world)
@@ -70,7 +88,7 @@ public partial class TomestoneClient
 
             Service.PluginLog.Debug($"Fetching Lodestone ID from: {url}");
 
-            var response = await this.httpClientNoRedirect.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            var response = await this.httpClientNoRedirect.GetAsync(url);
 
             if (response.StatusCode == System.Net.HttpStatusCode.Found ||
                 response.StatusCode == System.Net.HttpStatusCode.Redirect ||
@@ -104,6 +122,38 @@ public partial class TomestoneClient
                     Service.PluginLog.Error($"Failed to parse lodestoneId from location: {location}");
                     return null;
                 }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                // New behavior: Parse the response body to extract lodestone ID
+                var content = await response.Content.ReadAsStringAsync();
+
+                // Look for the character URL pattern in the HTML
+                // Pattern 1: Look for data-page attribute (Inertia.js)
+                var dataPageMatch = System.Text.RegularExpressions.Regex.Match(content, @"data-page=""[^""]*?""url"":""https://tomestone\.gg/character/(\d+)/([^""]+)""");
+                if (dataPageMatch.Success && uint.TryParse(dataPageMatch.Groups[1].Value, out var lodestoneId1))
+                {
+                    var slug1 = dataPageMatch.Groups[2].Value;
+                    this.characterSlugCache[lodestoneId1] = slug1;
+                    this.lodestoneCache[cacheKey] = (lodestoneId1, slug1, DateTime.Now);
+                    Service.PluginLog.Info($"Found Lodestone ID (from data-page): {lodestoneId1} for {firstName} {lastName}@{world}");
+                    return lodestoneId1;
+                }
+
+                // Pattern 2: Look for canonical URL or other URL references
+                var urlMatch = System.Text.RegularExpressions.Regex.Match(content, @"https://tomestone\.gg/character/(\d+)/([^""'<>\s]+)");
+                if (urlMatch.Success && uint.TryParse(urlMatch.Groups[1].Value, out var lodestoneId2))
+                {
+                    var slug2 = urlMatch.Groups[2].Value;
+                    this.characterSlugCache[lodestoneId2] = slug2;
+                    this.lodestoneCache[cacheKey] = (lodestoneId2, slug2, DateTime.Now);
+                    Service.PluginLog.Info($"Found Lodestone ID (from URL): {lodestoneId2} for {firstName} {lastName}@{world}");
+                    return lodestoneId2;
+                }
+
+                Service.PluginLog.Error($"Failed to parse lodestoneId from HTML body (length: {content.Length})");
+                Service.PluginLog.Debug($"First 500 chars: {content.Substring(0, Math.Min(500, content.Length))}");
+                return null;
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -678,6 +728,5 @@ public partial class TomestoneClient
             Service.PluginLog.Debug($"Cleaned up {expiredKeys.Count} expired cache entries");
         }
     }
-        ///
-    }
-
+    ///
+}
