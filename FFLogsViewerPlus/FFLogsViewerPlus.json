@@ -6,14 +6,12 @@
   "Punchline": "View FF Logs ranking percentiles in-game.",
   "RepoUrl": "https://github.com/lunatory/FFLogsViewerPlus",
   "IconUrl": "https://github.com/Aireil/FFLogsViewer/raw/master/res/icon.png",
-   "ImageUrls": [
+  "ImageUrls": [
     "https://github.com/Aireil/FFLogsViewer/raw/master/res/image1.png",
     "https://github.com/Aireil/FFLogsViewer/raw/master/res/image2.png"
   ],
   "Tags": [
     "FFLogs"
   ],
-
-    "Changelog": "-2.4.2.3\n    Improve FF Logs related errors logging and handling.\n-2.4.2.2\n    Fix a potential crash.\n-2.4.2.1\n    Update default layout with M12S P2.\n.-2.4.2.0\n    Update default layout with Savage by WorstAquaPlayer, thank you!.\n-2.4.1.0\n    Unreal update and open with reliability improvements by WorstAquaPlayer, thank you!²\n-2.4.0.0\n    7.4 update by WorstAquaPlayer, thank you!"
-
+  "Changelog": "-2.4.2.4\n    Fix open Tomestone button.\n    Improve FF Logs related error messages.\n-2.4.2.3\n    Improve FF Logs related errors logging and handling.\n-2.4.2.2\n    Fix a potential crash.\n-2.4.2.1\n    Update default layout with M12S P2.\n.-2.4.2.0\n    Update default layout with Savage by WorstAquaPlayer, thank you!.\n-2.4.1.0\n    Unreal update and open with reliability improvements by WorstAquaPlayer, thank you!²\n-2.4.0.0\n    7.4 update by WorstAquaPlayer, thank you!"
 }

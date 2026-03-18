@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -21,12 +22,13 @@ public partial class TomestoneClient
     private TomestonePersistentCache PersistentCache => Service.Configuration.TomestoneCache;
     ///
 
-    private readonly Dictionary<string, (TomestoneData Data, DateTime Timestamp)> encounterCache = new();
-    private readonly Dictionary<string, (uint LodestoneId, string Slug, DateTime Timestamp)> lodestoneCache = new();
+    private readonly ConcurrentDictionary<string, (TomestoneData Data, DateTime Timestamp)> encounterCache = new();
+    private readonly ConcurrentDictionary<string, (uint LodestoneId, string Slug, DateTime Timestamp)> lodestoneCache = new();
     private readonly HttpClient httpClient;
     private readonly HttpClient httpClientNoRedirect;
-    private readonly Dictionary<uint, string> characterSlugCache = new();
+    private readonly ConcurrentDictionary<uint, string> characterSlugCache = new();
     private string? inertiaVersion;
+    private readonly object persistentCacheLock = new();
 
     /// REMOVE these throttling fields
     // private DateTime lastRequestTime = DateTime.MinValue;
@@ -184,17 +186,23 @@ public partial class TomestoneClient
         var cacheKey = $"{lodestoneId}_{encounterSlug}_{category}";
 
         /// Check persistent cache first for clears
-        if (this.PersistentCache.ClearedEncounters.TryGetValue(cacheKey, out var persistentClear))
+        lock (this.persistentCacheLock)
         {
-            Service.PluginLog.Debug($"Using persistent cached clear for {encounterSlug}");
-            var clearData = new TomestoneClear(persistentClear.ClearDateTime, persistentClear.CompletionWeek);
-            return TomestoneData.EncounterCleared(clearData);
+            if (this.PersistentCache.ClearedEncounters.TryGetValue(cacheKey, out var persistentClear))
+            {
+                Service.PluginLog.Debug($"Using persistent cached clear for {encounterSlug}");
+                var clearData = new TomestoneClear(persistentClear.ClearDateTime, persistentClear.CompletionWeek);
+                return TomestoneData.EncounterCleared(clearData);
+            }
         }
         ///
 
         /// Check cache - clears are cached permanently, prog expires
+        (TomestoneData Data, DateTime Timestamp)? cachedValue = null;
         if (this.encounterCache.TryGetValue(cacheKey, out var cached))
         {
+            cachedValue = cached;
+
             // If it's a clear, always use cache (never expires)
             if (cached.Data.Cleared)
             {
@@ -218,7 +226,7 @@ public partial class TomestoneClient
         {
             Service.PluginLog.Warning($"No character slug cached for lodestone ID {lodestoneId}, cannot fetch fresh data");
             // Return cached data even if expired, or null if no cache
-            return cached.Data;
+            return cachedValue?.Data;
         }
         ///
 
@@ -245,12 +253,15 @@ public partial class TomestoneClient
                 {
                     Service.PluginLog.Info($"Permanently cached clear for {encounterSlug}");
                     /// Save clear to persistent cache
-                    this.PersistentCache.ClearedEncounters[cacheKey] = new TomestonePersistentCache.CachedClearData
+                    lock (this.persistentCacheLock)
                     {
-                        ClearDateTime = result.Clear?.DateTime,
-                        CompletionWeek = result.Clear?.CompletionWeek,
-                        CachedAt = DateTime.Now
-                    };
+                        this.PersistentCache.ClearedEncounters[cacheKey] = new TomestonePersistentCache.CachedClearData
+                        {
+                            ClearDateTime = result.Clear?.DateTime,
+                            CompletionWeek = result.Clear?.CompletionWeek,
+                            CachedAt = DateTime.Now
+                        };
+                    }
                     Service.Configuration.Save();
                     ///
                 }
@@ -679,27 +690,30 @@ public partial class TomestoneClient
     /// Add method to clear persistent cache for specific character/encounter
     public void ClearPersistentCache(uint? lodestoneId = null, string? encounterSlug = null)
     {
-        if (lodestoneId == null && encounterSlug == null)
+        lock (this.persistentCacheLock)
         {
-            // Clear all
-            this.PersistentCache.ClearedEncounters.Clear();
-            Service.PluginLog.Info("Cleared all persistent Tomestone cache");
-        }
-        else
-        {
-            // Clear matching entries
-            var keysToRemove = this.PersistentCache.ClearedEncounters.Keys
-                .Where(key =>
-                    (lodestoneId == null || key.StartsWith($"{lodestoneId}_")) &&
-                    (encounterSlug == null || key.Contains($"_{encounterSlug}_")))
-                .ToList();
-
-            foreach (var key in keysToRemove)
+            if (lodestoneId == null && encounterSlug == null)
             {
-                this.PersistentCache.ClearedEncounters.Remove(key);
+                // Clear all
+                this.PersistentCache.ClearedEncounters.Clear();
+                Service.PluginLog.Info("Cleared all persistent Tomestone cache");
             }
+            else
+            {
+                // Clear matching entries
+                var keysToRemove = this.PersistentCache.ClearedEncounters.Keys
+                    .Where(key =>
+                        (lodestoneId == null || key.StartsWith($"{lodestoneId}_")) &&
+                        (encounterSlug == null || key.Contains($"_{encounterSlug}_")))
+                    .ToList();
 
-            Service.PluginLog.Info($"Cleared {keysToRemove.Count} persistent cache entries");
+                foreach (var key in keysToRemove)
+                {
+                    this.PersistentCache.ClearedEncounters.Remove(key);
+                }
+
+                Service.PluginLog.Info($"Cleared {keysToRemove.Count} persistent cache entries");
+            }
         }
 
         Service.Configuration.Save();
@@ -719,7 +733,7 @@ public partial class TomestoneClient
 
         foreach (var key in expiredKeys)
         {
-            this.encounterCache.Remove(key);
+            this.encounterCache.TryRemove(key, out _);
         }
 
         /// Log cleanup
